@@ -1,0 +1,68 @@
+version: '3'
+
+services:
+
+  tb-core:
+    container_name: 'tb-core'
+    image: 'thingsboard/tb-node:3.4.4'
+    # https://github.com/thingsboard/thingsboard/blob/master/application/src/main/resources/thingsboard.yml
+    environment:
+      - 'HTTP_BIND_ADDRESS=0.0.0.0'
+      - 'HTTP_BIND_PORT=8080'
+      - 'TB_SERVICE_TYPE=tb-core'
+      - 'TB_SERVICE_ID=tb-core-service'
+      - 'DATABASE_TS_TYPE=timescale'
+      - 'DATABASE_TS_LATEST_TYPE=timescale'
+      - 'SPRING_DRIVER_CLASS_NAME=org.postgresql.Driver'
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://timescaledb:5432/thingsboard'
+      - 'SPRING_DATASOURCE_USERNAME=thingsboard'
+      - 'SPRING_DATASOURCE_PASSWORD=changeme'
+      - 'CACHE_TYPE=redis'
+      - 'REDIS_HOST=redis'
+      - 'TB_QUEUE_TYPE=kafka'
+      - 'TB_KAFKA_SERVERS=kafka:9092'
+      - 'ZOOKEEPER_ENABLED=true'
+      - 'ZOOKEEPER_URL=zookeeper:2181'
+      - 'METRICS_ENABLED=true'
+      - 'METRICS_ENDPOINTS_EXPOSE=prometheus'
+      - 'INSTALL_TB=false'
+      - 'LOAD_DEMO=false'
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.thingsboard-admin.rule=Host(`thingsboard-admin.docker.localhost`)'
+      - 'traefik.http.routers.thingsboard-admin.entrypoints=http'
+      - 'traefik.http.services.thingsboard-admin.loadbalancer.server.port=8080'
+    networks:
+      - 'thingsboard'
+    volumes:
+      - './tb-core/config/logback.xml:/config/logback.xml:ro'
+      - './tb-core/config/thingsboard.conf:/config/thingsboard.conf:ro'
+
+  tb-web-ui:
+    container_name: 'tb-web-ui'
+    image: 'thingsboard/tb-web-ui:3.4.4'
+    environment:
+      - 'HTTP_BIND_ADDRESS=0.0.0.0'
+      - 'HTTP_BIND_PORT=8080'
+      - 'METRICS_ENABLED=true'
+      - 'METRICS_ENDPOINTS_EXPOSE=prometheus'
+      - 'DATABASE_TS_TYPE=timescale'
+      - 'DATABASE_TS_LATEST_TYPE=timescale'
+      - 'SPRING_DRIVER_CLASS_NAME=org.postgresql.Driver'
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://timescaledb:5432/thingsboard'
+      - 'SPRING_DATASOURCE_USERNAME=thingsboard'
+      - 'SPRING_DATASOURCE_PASSWORD=changeme'
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.tb-web-ui.rule=Host(`tb-web-ui.docker.localhost`)'
+      - 'traefik.http.routers.tb-web-ui.entrypoints=http'
+      - 'traefik.http.services.tb-web-ui.loadbalancer.server.port=8080'
+    networks:
+      - 'thingsboard'
+    depends_on:
+      - 'tb-core'
+
+networks:
+
+  thingsboard:
+    external: true

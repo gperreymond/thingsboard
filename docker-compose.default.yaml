@@ -1,0 +1,123 @@
+version: '3'
+
+services:
+
+  traefik:
+    container_name: 'traefik'
+    image: 'traefik:v2.10'
+    command:
+      - '--api.insecure=true'
+      - '--providers.docker=true'
+      - '--providers.docker.exposedbydefault=false'
+      - '--entrypoints.http.address=:80'
+    ports:
+      - '80:80'
+      - '8080:8080'
+    volumes:
+      - '/var/run/docker.sock:/var/run/docker.sock:ro'
+    networks:
+      - 'thingsboard'
+
+  timescaledb:
+    container_name: 'timescaledb'
+    image: 'timescale/timescaledb:2.10.3-pg13'
+    environment:
+      - 'POSTGRES_DB=thingsboard'
+      - 'POSTGRES_USER=thingsboard'
+      - 'POSTGRES_PASSWORD=changeme'
+    volumes:
+      - 'timescaledb_data:/home/postgres/pgdata/data'
+    networks:
+      - 'thingsboard'
+
+  redis:
+    image: 'bitnami/redis:6.2.12'
+    container_name: 'redis'
+    environment:
+      - 'ALLOW_EMPTY_PASSWORD=yes'
+    networks:
+      - 'thingsboard'
+    volumes:
+      - 'redis_data:/bitnami/redis/data'
+
+  zookeeper:
+    image: 'bitnami/zookeeper:3.8.1'
+    container_name: 'zookeeper'
+    environment:
+      - 'ALLOW_ANONYMOUS_LOGIN=yes'
+      - 'ZOO_ENABLE_ADMIN_SERVER=yes'
+      - 'ZOO_ADMIN_SERVER_PORT_NUMBER=8000'
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.zookeeper-admin.rule=Host(`zookeeper-admin.docker.localhost`)'
+      - 'traefik.http.routers.zookeeper-admin.entrypoints=http'
+      - 'traefik.http.services.zookeeper-admin.loadbalancer.server.port=8000'
+    networks:
+      - 'thingsboard'
+    volumes:
+      - 'zookeeper_data:/bitnami/zookeeper'
+
+  kafka:
+    image: 'bitnami/kafka:3.4.0'
+    container_name: 'kafka'
+    environment:
+      - 'ALLOW_PLAINTEXT_LISTENER=yes'
+      - 'KAFKA_ENABLE_KRAFT=no'
+      - 'KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181'
+      - 'KAFKA_CFG_LISTENERS=PLAINTEXT://:9092'
+      - 'KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true'
+    networks:
+      - 'thingsboard'
+    volumes:
+      - 'kafka_data:/bitnami'
+    depends_on:
+      - 'zookeeper'
+
+  kafka-ui:
+    container_name: 'kafka-ui'
+    image: 'provectuslabs/kafka-ui:da3932e3422e45bdb0dc27cf538b79c8bf872602'
+    environment:
+      KAFKA_CLUSTERS_0_NAME: 'local'
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: 'kafka:9092'
+      SERVER_SERVLET_CONTEXT_PATH: '/'
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.kafka-admin.rule=Host(`kafka-admin.docker.localhost`)'
+      - 'traefik.http.routers.kafka-admin.entrypoints=http'
+      - 'traefik.http.services.kafka-admin.loadbalancer.server.port=8080'
+    networks:
+      - 'thingsboard'
+    depends_on:
+      - 'kafka'
+      - 'zookeeper'
+
+  pgadmin:
+    container_name: 'pgadmin'
+    image: 'dpage/pgadmin4:7.0'
+    environment:
+      PGADMIN_DEFAULT_EMAIL: 'admin@pgadmin.org'
+      PGADMIN_DEFAULT_PASSWORD: 'changeme'
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.pgadmin.rule=Host(`pgadmin.docker.localhost`)'
+      - 'traefik.http.routers.pgadmin.entrypoints=http'
+      - 'traefik.http.services.pgadmin.loadbalancer.server.port=80'
+    networks:
+      - 'thingsboard'
+    depends_on:
+      - 'timescaledb'
+    volumes:
+      - 'pgadmin_data:/var/lib/pgadmin'
+
+networks:
+
+  thingsboard:
+    external: true
+
+volumes:
+
+  timescaledb_data: {}
+  redis_data: {}
+  zookeeper_data: {}
+  kafka_data: {}
+  pgadmin_data: {}
