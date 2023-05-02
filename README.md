@@ -20,7 +20,12 @@ $ ./stop.sh
 * username: sysadmin@thingsboard.org
 * password: sysadmin
 
-### Documentations
+> thingsboard
+* http://thingsboard.docker.localhost
+* username: __the one you created in the admin__
+* password: __the one you created in the admin__
+
+## Documentations
 
 * https://github.com/thingsboard/thingsboard/blob/master/transport/mqtt/src/main/resources/tb-mqtt-transport.yml
 * https://github.com/thingsboard/thingsboard/blob/master/application/src/main/resources/thingsboard.yml

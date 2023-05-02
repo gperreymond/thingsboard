@@ -29,9 +29,9 @@ services:
       - 'LOAD_DEMO=false'
     labels:
       - 'traefik.enable=true'
-      - 'traefik.http.routers.thingsboard-admin.rule=Host(`thingsboard-admin.docker.localhost`)'
-      - 'traefik.http.routers.thingsboard-admin.entrypoints=http'
-      - 'traefik.http.services.thingsboard-admin.loadbalancer.server.port=8080'
+      - 'traefik.http.routers.thingsboard-core.rule=Host(`thingsboard.docker.localhost`) && (PathPrefix(`/oauth2/`) || PathPrefix(`/swagger`) || PathPrefix(`/login/oauth2/`) || PathPrefix(`/api/`))'
+      - 'traefik.http.routers.thingsboard-core.entrypoints=http'
+      - 'traefik.http.services.thingsboard-core.loadbalancer.server.port=8080'
     networks:
       - 'thingsboard'
     volumes:
@@ -44,19 +44,11 @@ services:
     environment:
       - 'HTTP_BIND_ADDRESS=0.0.0.0'
       - 'HTTP_BIND_PORT=8080'
-      - 'METRICS_ENABLED=true'
-      - 'METRICS_ENDPOINTS_EXPOSE=prometheus'
-      - 'DATABASE_TS_TYPE=timescale'
-      - 'DATABASE_TS_LATEST_TYPE=timescale'
-      - 'SPRING_DRIVER_CLASS_NAME=org.postgresql.Driver'
-      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://timescaledb:5432/thingsboard'
-      - 'SPRING_DATASOURCE_USERNAME=thingsboard'
-      - 'SPRING_DATASOURCE_PASSWORD=changeme'
     labels:
       - 'traefik.enable=true'
-      - 'traefik.http.routers.tb-web-ui.rule=Host(`tb-web-ui.docker.localhost`)'
-      - 'traefik.http.routers.tb-web-ui.entrypoints=http'
-      - 'traefik.http.services.tb-web-ui.loadbalancer.server.port=8080'
+      - 'traefik.http.routers.thingsboard-webui.rule=Host(`thingsboard.docker.localhost`) && (PathPrefix(`/`))'
+      - 'traefik.http.routers.thingsboard-webui.entrypoints=http'
+      - 'traefik.http.services.thingsboard-webui.loadbalancer.server.port=8080'
     networks:
       - 'thingsboard'
     depends_on:
